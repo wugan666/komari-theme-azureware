@@ -14,7 +14,7 @@
   --az-h: 245;
   --az-1: oklch(0.72 0.16 var(--az-h));
   --az-2: oklch(0.8 0.13 calc(var(--az-h) - 35));
-  --az-panel: oklch(0.19 0.022 255 / 0.86);
+  --az-panel: oklch(0.19 0.022 255 / 0.93);
   --az-line: oklch(1 0 0 / 0.08);
 
   --background: oklch(0.13 0.022 258);
@@ -139,8 +139,6 @@ html[data-accent='mint'] { --az-h: 165; }
 /* ===== AzureWare ===== */
 .glass-surface {
   background-color: var(--az-panel);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
 }
 
 /* 背景：深蓝底 + 三团缓慢漂移的光晕 + 细网格。只用 transform 动画，不占用主线程 */
@@ -154,20 +152,20 @@ html[data-accent='mint'] { --az-h: 165; }
     linear-gradient(90deg, oklch(1 0 0 / 0.025) 1px, transparent 1px) 0 0 / 44px 100%,
     radial-gradient(120% 90% at 50% 0%, oklch(0.2 0.05 258), oklch(0.11 0.02 262) 70%);
 }
+/* 光晕用径向渐变画，不用 filter: blur——大面积模糊层每一帧都要重新合成，滚动时会明显卡顿 */
 .az-backdrop i {
   position: absolute;
-  width: 52vmax;
-  height: 52vmax;
+  width: 78vmax;
+  height: 78vmax;
   border-radius: 50%;
-  filter: blur(90px);
-  opacity: 0.32;
-  background: var(--az-1);
+  opacity: 0.5;
+  background: radial-gradient(closest-side, var(--az-1), transparent);
   animation: az-drift 46s ease-in-out infinite alternate;
   will-change: transform;
 }
-.az-backdrop i:nth-child(1) { top: -22vmax; left: -12vmax; }
-.az-backdrop i:nth-child(2) { bottom: -28vmax; right: -14vmax; background: var(--az-2); animation-duration: 58s; animation-delay: -20s; }
-.az-backdrop i:nth-child(3) { top: 30%; left: 42%; width: 30vmax; height: 30vmax; opacity: 0.16; background: oklch(0.66 0.2 calc(var(--az-h) + 50)); animation-duration: 70s; animation-delay: -35s; }
+.az-backdrop i:nth-child(1) { top: -36vmax; left: -26vmax; }
+.az-backdrop i:nth-child(2) { bottom: -42vmax; right: -28vmax; background: radial-gradient(closest-side, var(--az-2), transparent); animation-duration: 58s; animation-delay: -20s; }
+.az-backdrop i:nth-child(3) { top: 22%; left: 34%; width: 46vmax; height: 46vmax; opacity: 0.26; background: radial-gradient(closest-side, oklch(0.66 0.2 calc(var(--az-h) + 50)), transparent); animation-duration: 70s; animation-delay: -35s; }
 @keyframes az-drift {
   from { transform: translate3d(0, 0, 0) scale(1); }
   to { transform: translate3d(9vmax, 6vmax, 0) scale(1.18); }
@@ -186,10 +184,8 @@ html[data-accent='mint'] { --az-h: 165; }
   gap: 0.75rem;
   height: 3rem;
   padding: 0 0.875rem;
-  background: oklch(0.14 0.024 258 / 0.78);
+  background: oklch(0.14 0.024 258 / 0.94);
   border-bottom: 1px solid var(--az-line);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
   font-size: 0.8125rem;
   text-shadow: 0 1px 0 oklch(0 0 0 / 0.55);
 }
@@ -250,8 +246,6 @@ html[data-accent='mint'] { --az-h: 165; }
   border-radius: 0.5rem;
   background: var(--az-panel);
   box-shadow: 0 10px 34px oklch(0 0 0 / 0.42);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
   font-size: 0.8125rem;
 }
 .az-panel-floating { position: absolute; top: 0; left: 0; width: 264px; }
