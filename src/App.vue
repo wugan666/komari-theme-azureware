@@ -5,6 +5,7 @@ import { computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ArrayList from '@/components/azure/ArrayList.vue'
 import { Toaster } from '@/components/ui/sonner'
+import { useVisualConfig } from '@/azure/config'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig } from '@/utils/helper'
@@ -14,6 +15,7 @@ import LoadingCover from './components/LoadingCover.vue'
 import Provider from './components/Provider.vue'
 
 const appStore = useAppStore()
+const config = useVisualConfig()
 const nodesStore = useNodesStore()
 const route = useRoute()
 const router = useRouter()
@@ -43,9 +45,19 @@ const showAdmin = computed(() => appStore.isLoggedIn || !appStore.hideAdminEntry
 const isHome = computed(() => route.name === 'home')
 const buildVersion = __BUILD_VERSION__
 
+// Visual 模块的设置落到根元素的 data-* 和 CSS 变量上，样式全部在 main.css 里读取
 watchEffect(() => {
-  document.documentElement.dataset.accent = appStore.accentColor
+  const root = document.documentElement
+  root.dataset.accent = config.get<string>('clickgui', 'accent')
+  root.dataset.header = config.get<string>('clickgui', 'header')
+  root.dataset.animations = String(config.get<boolean>('clickgui', 'animations'))
+  root.style.setProperty('--az-panel-alpha', String(config.get<number>('clickgui', 'opacity') / 100))
+  root.style.setProperty('--az-rounding', `${config.get<number>('clickgui', 'rounding')}px`)
+  root.style.setProperty('--az-glow', String(config.get<boolean>('backdrop', 'enabled') ? config.get<number>('backdrop', 'glow') / 100 : 0))
+  root.dataset.grid = String(config.get<boolean>('backdrop', 'enabled') && config.get<boolean>('backdrop', 'grid'))
+  root.dataset.drift = String(config.get<boolean>('backdrop', 'drift'))
 })
+const hud = (key: string) => config.get<boolean>('hud', 'enabled') && config.get<boolean>('hud', key)
 watchEffect(() => {
   const total = nodesStore.nodes.length
   document.title = total > 0 ? `${sitename.value} · ${online.value.length}/${total} 在线` : sitename.value
@@ -75,15 +87,15 @@ onUnmounted(() => destroyInitManager())
     <header class="az-hud">
       <button type="button" class="az-watermark" aria-label="返回首页" @click="router.push('/')">
         <span class="az-logo">AzureWare</span>
-        <span class="hidden truncate text-white/75 sm:inline">{{ sitename }}</span>
+        <span v-if="hud('sitename')" class="hidden truncate text-white/75 sm:inline">{{ sitename }}</span>
       </button>
-      <div class="az-hud-stats">
-        <span><b>{{ online.length }}</b>/{{ nodesStore.nodes.length }} online</span>
-        <span class="hidden md:inline">↑ {{ totals.up }}</span>
-        <span class="hidden md:inline">↓ {{ totals.down }}</span>
-        <span class="hidden lg:inline">Σ {{ totals.traffic }}</span>
-        <span class="hidden sm:inline tabular-nums">{{ clock }}</span>
-      </div>
+      <TransitionGroup tag="div" name="az-hud-item" class="az-hud-stats">
+        <span v-if="hud('online')" key="online"><b>{{ online.length }}</b>/{{ nodesStore.nodes.length }} online</span>
+        <span v-if="hud('speed')" key="up" class="hidden md:inline">↑ {{ totals.up }}</span>
+        <span v-if="hud('speed')" key="down" class="hidden md:inline">↓ {{ totals.down }}</span>
+        <span v-if="hud('traffic')" key="traffic" class="hidden lg:inline">Σ {{ totals.traffic }}</span>
+        <span v-if="hud('clock')" key="clock" class="hidden sm:inline tabular-nums">{{ clock }}</span>
+      </TransitionGroup>
       <span class="flex-1" />
       <label v-if="isHome" class="az-search">
         <Icon icon="tabler:search" width="14" class="shrink-0 text-white/50" />
@@ -94,7 +106,9 @@ onUnmounted(() => destroyInitManager())
       </button>
     </header>
     <ConnectionBanner />
-    <ArrayList v-if="!appStore.loading && appStore.showArrayList && isHome" class="hidden xl:block" :nodes="nodesStore.nodes" @open="uuid => router.push(`/instance/${uuid}`)" />
+    <Transition name="az-fade">
+      <ArrayList v-if="!appStore.loading && config.get('arraylist', 'enabled') && isHome" class="hidden xl:block" :nodes="nodesStore.nodes" @open="uuid => router.push(`/instance/${uuid}`)" />
+    </Transition>
     <main v-if="!appStore.loading" class="relative z-10 min-h-[calc(100vh-3rem)]">
       <RouterView v-slot="{ Component }">
         <KeepAlive :include="['HomeView']">

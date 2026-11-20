@@ -14,7 +14,10 @@
   --az-h: 245;
   --az-1: oklch(0.72 0.16 var(--az-h));
   --az-2: oklch(0.8 0.13 calc(var(--az-h) - 35));
-  --az-panel: oklch(0.19 0.022 255 / 0.93);
+  --az-panel-alpha: 0.93;
+  --az-rounding: 8px;
+  --az-glow: 0.5;
+  --az-panel: oklch(0.19 0.022 255 / var(--az-panel-alpha));
   --az-line: oklch(1 0 0 / 0.08);
 
   --background: oklch(0.13 0.022 258);
@@ -147,25 +150,34 @@ html[data-accent='mint'] { --az-h: 165; }
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background:
-    linear-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px) 0 0 / 100% 44px,
-    linear-gradient(90deg, oklch(1 0 0 / 0.025) 1px, transparent 1px) 0 0 / 44px 100%,
-    radial-gradient(120% 90% at 50% 0%, oklch(0.2 0.05 258), oklch(0.11 0.02 262) 70%);
+  background: radial-gradient(120% 90% at 50% 0%, oklch(0.2 0.05 258), oklch(0.11 0.02 262) 70%);
 }
+.az-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(oklch(1 0 0 / 0.028) 1px, transparent 1px) 0 0 / 100% 44px,
+    linear-gradient(90deg, oklch(1 0 0 / 0.028) 1px, transparent 1px) 0 0 / 44px 100%;
+  transition: opacity 0.4s;
+}
+html[data-grid='false'] .az-backdrop::after { opacity: 0; }
+html[data-drift='false'] .az-backdrop i { animation-play-state: paused; }
 /* 光晕用径向渐变画，不用 filter: blur——大面积模糊层每一帧都要重新合成，滚动时会明显卡顿 */
 .az-backdrop i {
   position: absolute;
   width: 78vmax;
   height: 78vmax;
   border-radius: 50%;
-  opacity: 0.5;
+  opacity: var(--az-glow);
   background: radial-gradient(closest-side, var(--az-1), transparent);
   animation: az-drift 46s ease-in-out infinite alternate;
   will-change: transform;
+  transition: opacity 0.5s;
 }
 .az-backdrop i:nth-child(1) { top: -36vmax; left: -26vmax; }
 .az-backdrop i:nth-child(2) { bottom: -42vmax; right: -28vmax; background: radial-gradient(closest-side, var(--az-2), transparent); animation-duration: 58s; animation-delay: -20s; }
-.az-backdrop i:nth-child(3) { top: 22%; left: 34%; width: 46vmax; height: 46vmax; opacity: 0.26; background: radial-gradient(closest-side, oklch(0.66 0.2 calc(var(--az-h) + 50)), transparent); animation-duration: 70s; animation-delay: -35s; }
+.az-backdrop i:nth-child(3) { top: 22%; left: 34%; width: 46vmax; height: 46vmax; opacity: calc(var(--az-glow) * 0.52); background: radial-gradient(closest-side, oklch(0.66 0.2 calc(var(--az-h) + 50)), transparent); animation-duration: 70s; animation-delay: -35s; }
 @keyframes az-drift {
   from { transform: translate3d(0, 0, 0) scale(1); }
   to { transform: translate3d(9vmax, 6vmax, 0) scale(1.18); }
@@ -243,7 +255,7 @@ html[data-accent='mint'] { --az-h: 165; }
 .az-panel {
   overflow: hidden;
   border: 1px solid var(--az-line);
-  border-radius: 0.5rem;
+  border-radius: var(--az-rounding);
   background: var(--az-panel);
   box-shadow: 0 10px 34px oklch(0 0 0 / 0.42);
   font-size: 0.8125rem;
@@ -270,7 +282,7 @@ html[data-accent='mint'] { --az-h: 165; }
 .az-module { border-left: 2px solid transparent; color: oklch(1 0 0 / 0.5); }
 .az-module-row { display: flex; align-items: center; gap: 0.25rem; height: 1.875rem; padding: 0 0.25rem 0 0.625rem; transition: background-color 0.12s; }
 .az-module-row:hover { background: oklch(1 0 0 / 0.07); }
-.az-module-on { border-left-color: var(--az-1); color: #fff; background: linear-gradient(90deg, color-mix(in oklab, var(--az-1) 34%, transparent), color-mix(in oklab, var(--az-1) 6%, transparent)); }
+.az-module-on { border-left-color: var(--az-1); color: #fff; }
 .az-module-open > .az-module-row { background: oklch(1 0 0 / 0.08); }
 
 .az-settings { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.375rem 0.5rem 0.5rem 0.625rem; background: oklch(0 0 0 / 0.3); font-size: 0.71875rem; color: oklch(1 0 0 / 0.88); }
@@ -302,3 +314,66 @@ html[data-accent='mint'] { --az-h: 165; }
 .az-footer { position: relative; z-index: 10; padding: 1rem 0.875rem 1.25rem; font-size: 0.6875rem; color: oklch(1 0 0 / 0.42); }
 .az-footer a { color: oklch(1 0 0 / 0.7); }
 .az-footer a:hover { color: var(--az-2); }
+
+/* ===== 客户端设置控件 ===== */
+.az-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+.az-collapse-open { grid-template-rows: 1fr; }
+.az-check, .az-mode { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; height: 1.375rem; padding: 0 0.5rem; border-radius: 0.1875rem; text-align: left; transition: background-color 0.12s; }
+.az-check:hover, .az-mode:hover { background: oklch(1 0 0 / 0.08); }
+.az-check:focus-visible, .az-mode:focus-visible, .az-slider-live:focus-visible { outline: 2px solid var(--az-2); outline-offset: 1px; }
+.az-switch { position: relative; width: 1.625rem; height: 0.875rem; flex-shrink: 0; border-radius: 999px; background: oklch(1 0 0 / 0.16); transition: background-color 0.2s; }
+.az-switch i { position: absolute; top: 2px; left: 2px; width: 0.625rem; height: 0.625rem; border-radius: 50%; background: oklch(1 0 0 / 0.75); transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s; }
+.az-switch-on { background: color-mix(in oklab, var(--az-1) 80%, black); }
+.az-switch-on i { transform: translateX(0.75rem); background: #fff; }
+.az-mode-value { color: var(--az-2); font-weight: 600; }
+.az-slider-live { cursor: ew-resize; touch-action: none; user-select: none; }
+.az-slider-live .az-slider-fill { transition: width 0.08s linear; }
+.az-dots { display: inline-flex; flex-direction: column; gap: 2px; transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+.az-dots i { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+.az-dots-open { transform: rotate(90deg); }
+
+/* ===== 动效 ===== */
+/* 模块：悬停时文字右移一点；启用/关闭时高亮从左向右铺开 */
+.az-module { background-image: linear-gradient(90deg, color-mix(in oklab, var(--az-1) 34%, transparent), color-mix(in oklab, var(--az-1) 6%, transparent)); background-repeat: no-repeat; background-size: 0% 100%; transition: background-size 0.32s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s, color 0.25s; }
+.az-module-on { background-color: transparent; background-size: 100% 100%; }
+.az-module-row > button:first-child { transition: padding-left 0.16s ease-out; }
+.az-module-row:hover > button:first-child { padding-left: 0.25rem; }
+.az-icon-button { transition: background-color 0.15s, color 0.15s, transform 0.15s; }
+.az-icon-button:active { transform: scale(0.88); }
+
+/* 面板：打开页面时依次浮现；拖动时微微抬起 */
+.az-panel-enter { animation: az-panel-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--az-delay, 0ms); }
+@keyframes az-panel-in { from { opacity: 0; scale: 0.94; translate: 0 10px; } }
+.az-panel { transition: box-shadow 0.2s, scale 0.18s, border-radius 0.2s; }
+.az-panel-dragging { scale: 1.015; }
+
+/* 标题栏的三种外观 */
+html[data-header='flat'] .az-panel-header { background: color-mix(in oklab, var(--az-1) 70%, black); }
+html[data-header='rainbow'] .az-panel-header { background: linear-gradient(90deg, #ff5f6d, #ffc371, #47e891, #3fa9ff, #a56bff, #ff5f6d); background-size: 300% 100%; animation: az-rainbow 9s linear infinite; }
+@keyframes az-rainbow { to { background-position: -300% 0; } }
+
+/* ArrayList：进出场从右侧滑入滑出，重排时平滑移动 */
+.az-arraylist li { transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s; }
+.az-arraylist-enter-from, .az-arraylist-leave-to { opacity: 0; transform: translateX(100%); }
+.az-arraylist-leave-active { position: absolute; right: 0; }
+.az-arraylist-suffix { color: oklch(1 0 0 / 0.55); }
+.az-arraylist[data-background='false'] button { background: transparent; }
+.az-arraylist[data-bar='false'] button { border-right-width: 0; }
+.az-arraylist[data-color='static'] button { border-right-color: var(--az-1); color: var(--az-2); }
+.az-arraylist[data-color='rainbow'] button { border-right-color: hsl(calc(var(--az-i) * 14 + var(--az-spin, 0)) 90% 62%); color: hsl(calc(var(--az-i) * 14 + var(--az-spin, 0)) 95% 72%); }
+.az-arraylist[data-color='rainbow'] { animation: az-spin 8s linear infinite; }
+@property --az-spin { syntax: '<number>'; inherits: true; initial-value: 0; }
+@keyframes az-spin { to { --az-spin: 360; } }
+
+/* HUD 项目与整块淡入淡出 */
+.az-hud-item-enter-active, .az-hud-item-leave-active, .az-fade-enter-active, .az-fade-leave-active { transition: opacity 0.25s, transform 0.25s; }
+.az-hud-item-enter-from, .az-hud-item-leave-to { opacity: 0; transform: translateY(-6px); }
+.az-hud-item-leave-active { position: absolute; }
+.az-fade-enter-from, .az-fade-leave-to { opacity: 0; transform: translateX(12px); }
+
+/* Visual → ClickGUI → Animations 关闭，或系统要求减少动效时，全部停掉 */
+html[data-animations='false'] *, html[data-animations='false'] *::before, html[data-animations='false'] *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .az-panel-enter, .az-logo, .az-arraylist[data-color='rainbow'], html[data-header='rainbow'] .az-panel-header { animation: none; }
+  .az-collapse, .az-module, .az-arraylist li { transition: none; }
+}

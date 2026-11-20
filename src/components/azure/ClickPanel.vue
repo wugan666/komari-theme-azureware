@@ -12,6 +12,8 @@ const props = defineProps<{
   z: number
   collapsed: boolean
   floating: boolean
+  /** position in the list, for the staggered entrance */
+  index: number
 }>()
 const emit = defineEmits<{ move: [x: number, y: number], focus: [], toggle: [] }>()
 
@@ -22,7 +24,6 @@ let originX = 0
 let originY = 0
 
 function onPointerDown(event: PointerEvent) {
-  emit('focus')
   if (!props.floating || event.button !== 0 || (event.target as HTMLElement).closest('button'))
     return
   dragging.value = true
@@ -44,9 +45,10 @@ function onPointerUp() {
 
 <template>
   <section
-    class="az-panel" :class="{ 'az-panel-floating': floating, 'az-panel-dragging': dragging }"
-    :style="floating ? { transform: `translate(${x}px, ${y}px)`, zIndex: z } : undefined"
+    class="az-panel az-panel-enter" :class="{ 'az-panel-floating': floating, 'az-panel-dragging': dragging }"
+    :style="floating ? { 'transform': `translate(${x}px, ${y}px)`, 'zIndex': z, '--az-delay': `${index * 45}ms` } : { '--az-delay': `${index * 45}ms` }"
     :aria-label="`${title} 面板`"
+    @pointerdown.capture="emit('focus')"
   >
     <header
       class="az-panel-header" :class="floating ? 'cursor-grab active:cursor-grabbing' : ''"
@@ -59,8 +61,12 @@ function onPointerUp() {
         <Icon icon="tabler:chevron-down" width="14" class="transition-transform duration-200" :class="collapsed ? '-rotate-90' : ''" />
       </button>
     </header>
-    <div v-show="!collapsed" class="az-panel-body">
-      <slot />
+    <div class="az-collapse" :class="{ 'az-collapse-open': !collapsed }">
+      <div class="min-h-0 overflow-hidden">
+        <div class="az-panel-body">
+          <slot />
+        </div>
+      </div>
     </div>
   </section>
 </template>

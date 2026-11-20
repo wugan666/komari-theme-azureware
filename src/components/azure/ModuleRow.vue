@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { Icon } from '@iconify/vue'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatRelativeTime, formatUptimeWithFormat } from '@/utils/helper'
@@ -42,6 +42,12 @@ const values = computed(() => {
     ['System', `${getOSName(node.os)} · ${node.cpu_cores}C · ${node.arch}`],
   ]
 })
+// 收起动画期间内容还要留在 DOM 里；从没展开过的模块则不渲染设置，省掉 40 份隐藏节点
+const wasOpen = ref(false)
+watch(() => props.expanded, (value) => {
+  if (value)
+    wasOpen.value = true
+})
 const lastSeen = computed(() => formatRelativeTime(props.node.time, nodesStore.now))
 const brief = computed(() => props.node.online ? `${(props.node.cpu ?? 0).toFixed(0)}%` : 'OFF')
 </script>
@@ -49,7 +55,7 @@ const brief = computed(() => props.node.online ? `${(props.node.cpu ?? 0).toFixe
 <template>
   <div class="az-module" :class="{ 'az-module-on': node.online, 'az-module-open': expanded }">
     <div class="az-module-row">
-      <button type="button" class="flex min-w-0 flex-1 items-center gap-2 text-left" :aria-expanded="expanded" :title="node.name" @click="emit('toggle')">
+      <button type="button" class="flex min-w-0 flex-1 items-center gap-2 text-left" :aria-expanded="expanded" :title="node.name" @click="emit('toggle')" @contextmenu.prevent="emit('toggle')">
         <img v-if="node.region?.trim()" :src="`/images/flags/${getRegionCode(node.region)}.svg`" alt="" class="size-3.5 shrink-0 opacity-90">
         <span class="truncate">{{ node.name }}</span>
         <span class="ml-auto shrink-0 text-[11px] tabular-nums opacity-70">{{ brief }}</span>
@@ -58,7 +64,9 @@ const brief = computed(() => props.node.online ? `${(props.node.cpu ?? 0).toFixe
         <Icon icon="tabler:arrow-up-right" width="14" />
       </button>
     </div>
-    <div v-if="expanded" class="az-settings">
+    <div class="az-collapse" :class="{ 'az-collapse-open': expanded }">
+      <div class="min-h-0 overflow-hidden">
+        <div v-if="expanded || wasOpen" class="az-settings">
       <template v-if="node.online">
         <div v-for="slider in sliders" :key="slider.label" class="az-slider" :class="slider.percent >= 90 ? 'az-slider-danger' : slider.percent >= 75 ? 'az-slider-warn' : ''">
           <div class="az-slider-fill" :style="{ width: `${slider.percent}%` }" />
@@ -73,8 +81,10 @@ const brief = computed(() => props.node.online ? `${(props.node.cpu ?? 0).toFixe
         <span class="text-white/50">Last seen</span><span>{{ lastSeen !== '-' ? lastSeen : '未知' }}</span>
       </div>
       <button type="button" class="az-bind" @click="emit('open')">
-        OPEN DETAILS
-      </button>
+          OPEN DETAILS
+        </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
