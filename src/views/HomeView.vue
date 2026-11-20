@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
-import { useEventListener, useStorage, useWindowSize } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useEventListener, useResizeObserver, useStorage, useWindowSize } from '@vueuse/core'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ClickPanel from '@/components/azure/ClickPanel.vue'
 import ModuleRow from '@/components/azure/ModuleRow.vue'
@@ -68,56 +68,64 @@ const panels = computed(() => [
   ...nodePanels.value.map(panel => ({ ...panel, rows: panel.nodes.length })),
 ])
 
-// ===== 面板位置：可拖动，记在浏览器里 =====
-interface PanelState { x: number, y: number, collapsed: boolean }
-const layout = useStorage<Record<string, PanelState>>('azureware:layout', {})
+// ===== 面板位置 =====
+// 没被拖动过的面板自动排成几列，并按实际高度实时重排：展开某个模块的设置时，
+// 同一列下面的面板会被推下去而不是被盖住。拖动过的面板固定在拖到的位置。
+const pins = useStorage<Record<string, [number, number]>>('azureware:pins', {})
+const collapsedPanels = useStorage<string[]>('azureware:collapsed', [])
+const heights = ref<Record<string, number>>({})
 const order = ref<string[]>([])
 const floating = computed(() => width.value >= 768)
 const stage = ref<HTMLElement>()
+const stageWidth = ref(0)
+useResizeObserver(stage, ([entry]) => {
+  stageWidth.value = entry?.contentRect.width ?? 0
+})
 
 function estimateHeight(rows: number): number {
   return 40 + Math.min(rows, 14) * 30 + 10
 }
-// 没有位置的面板按列从左到右、哪列矮放哪列
-function arrange(reset = false) {
-  // stage 已经在为 ArrayList 让出右侧空间的容器里
-  const available = stage.value?.clientWidth ?? width.value
+const positions = computed(() => {
+  const available = stageWidth.value || width.value
   const columns = Math.max(1, Math.floor((available + PANEL_GAP) / (PANEL_WIDTH + PANEL_GAP)))
-  const heights = Array.from({ length: columns }, () => 0)
-  const next: Record<string, PanelState> = reset ? {} : { ...layout.value }
+  const columnHeights = Array.from({ length: columns }, () => 0)
+  const result: Record<string, [number, number]> = {}
   for (const panel of panels.value) {
-    const existing = next[panel.name]
-    const height = estimateHeight(panel.rows)
-    if (existing) {
-      const column = Math.min(columns - 1, Math.max(0, Math.round(existing.x / (PANEL_WIDTH + PANEL_GAP))))
-      heights[column] = Math.max(heights[column]!, existing.y + (existing.collapsed ? 40 : height) + PANEL_GAP)
+    const pin = pins.value[panel.name]
+    if (pin) {
+      result[panel.name] = pin
       continue
     }
-    const column = heights.indexOf(Math.min(...heights))
-    next[panel.name] = { x: column * (PANEL_WIDTH + PANEL_GAP), y: heights[column]!, collapsed: false }
-    heights[column] = heights[column]! + height + PANEL_GAP
+    const column = columnHeights.indexOf(Math.min(...columnHeights))
+    result[panel.name] = [column * (PANEL_WIDTH + PANEL_GAP), columnHeights[column]!]
+    columnHeights[column] = columnHeights[column]! + (heights.value[panel.name] ?? estimateHeight(panel.rows)) + PANEL_GAP
   }
-  layout.value = next
+  return { result, bottom: Math.max(...columnHeights, ...Object.entries(pins.value).map(([name, pin]) => pin[1] + (heights.value[name] ?? 0))) }
+})
+function position(name: string): [number, number] {
+  return positions.value.result[name] ?? [0, 0]
 }
-watch(() => panels.value.map(panel => panel.name).join('|'), () => nextTick(() => arrange()))
-onMounted(() => arrange())
-function resetLayout() {
-  expanded.value = new Set()
-  arrange(true)
-  window.$message?.success('面板位置已重置')
-}
-function panelState(name: string): PanelState {
-  return layout.value[name] ?? { x: 0, y: 0, collapsed: false }
+function setHeight(name: string, height: number) {
+  if (heights.value[name] !== height)
+    heights.value = { ...heights.value, [name]: height }
 }
 function movePanel(name: string, x: number, y: number) {
-  layout.value = { ...layout.value, [name]: { ...panelState(name), x, y } }
+  pins.value = { ...pins.value, [name]: [x, y] }
+}
+function isCollapsed(name: string): boolean {
+  return collapsedPanels.value.includes(name)
 }
 function togglePanel(name: string) {
-  const state = panelState(name)
-  layout.value = { ...layout.value, [name]: { ...state, collapsed: !state.collapsed } }
+  collapsedPanels.value = isCollapsed(name) ? collapsedPanels.value.filter(item => item !== name) : [...collapsedPanels.value, name]
 }
 function focusPanel(name: string) {
   order.value = [...order.value.filter(item => item !== name), name]
+}
+function resetLayout() {
+  pins.value = {}
+  collapsedPanels.value = []
+  expanded.value = new Set()
+  window.$message?.success('面板位置已重置')
 }
 
 // ===== 模块展开 =====
@@ -153,12 +161,13 @@ defineExpose({ resetLayout })
       </button>
     </div>
     <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0 scale-[0.98]" leave-active-class="transition duration-150" leave-to-class="opacity-0 scale-[0.98]">
-      <div v-show="guiVisible" ref="stage" class="az-stage" :class="floating ? 'az-stage-floating' : ''">
+      <div v-show="guiVisible" ref="stage" class="az-stage" :class="floating ? 'az-stage-floating' : ''" :style="floating ? { minHeight: `${positions.bottom}px` } : undefined">
         <ClickPanel
           v-for="(panel, panelIndex) in panels" :key="panel.name" :index="panelIndex"
           :title="panel.name" :online="panel.online" :total="panel.total"
-          :x="panelState(panel.name).x" :y="panelState(panel.name).y" :z="10 + order.indexOf(panel.name)"
-          :collapsed="panelState(panel.name).collapsed" :floating="floating"
+          :x="position(panel.name)[0]" :y="position(panel.name)[1]" :z="10 + order.indexOf(panel.name)"
+          :collapsed="isCollapsed(panel.name)" :floating="floating" :pinned="panel.name in pins"
+          @resize="height => setHeight(panel.name, height)"
           @move="(x, y) => movePanel(panel.name, x, y)" @focus="focusPanel(panel.name)" @toggle="togglePanel(panel.name)"
         >
           <template v-if="panel.name === VISUAL_PANEL">

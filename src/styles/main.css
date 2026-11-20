@@ -251,7 +251,7 @@ html[data-drift='false'] .az-backdrop i { animation-play-state: paused; }
 
 /* ClickGUI 面板 */
 .az-stage { display: flex; flex-direction: column; gap: 0.75rem; }
-.az-stage-floating { position: relative; display: block; min-height: 70vh; }
+.az-stage-floating { position: relative; display: block; transition: min-height 0.3s; }
 .az-panel {
   overflow: hidden;
   border: 1px solid var(--az-line);
@@ -345,6 +345,9 @@ html[data-drift='false'] .az-backdrop i { animation-play-state: paused; }
 .az-panel-enter { animation: az-panel-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--az-delay, 0ms); }
 @keyframes az-panel-in { from { opacity: 0; scale: 0.94; translate: 0 10px; } }
 .az-panel { transition: box-shadow 0.2s, scale 0.18s, border-radius 0.2s; }
+/* 自动排列的面板在重排时平滑滑到新位置；拖动中的面板必须紧跟指针，不能有过渡 */
+.az-panel-floating:not(.az-panel-dragging) { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s, scale 0.18s, border-radius 0.2s; }
+.az-pin { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: #fff; opacity: 0.75; }
 .az-panel-dragging { scale: 1.015; }
 
 /* 标题栏的三种外观 */
