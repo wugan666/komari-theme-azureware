@@ -380,3 +380,13 @@ html[data-animations='false'] *, html[data-animations='false'] *::before, html[d
   .az-panel-enter, .az-logo, .az-arraylist[data-color='rainbow'], html[data-header='rainbow'] .az-panel-header { animation: none; }
   .az-collapse, .az-module, .az-arraylist li { transition: none; }
 }
+
+/* ===== 节点详情页的可读性 ===== */
+.instance-detail { padding: 0.75rem 0.875rem 0; font-size: 0.875rem; }
+.instance-detail .text-\[10px\], .instance-detail .text-\[11px\] { font-size: 0.75rem; line-height: 1.45; }
+.instance-detail .text-xs { font-size: 0.8125rem; line-height: 1.5; }
+.instance-detail .text-muted-foreground { color: oklch(0.82 0.02 250); }
+.instance-detail .glass-surface, .instance-detail .bg-card { background-color: oklch(0.2 0.024 255 / 0.96); border-color: oklch(0.42 0.03 255); }
+.instance-detail .bg-muted\/50, .instance-detail .bg-muted\/40, .instance-detail .bg-muted { background-color: oklch(0.26 0.026 255); }
+.instance-detail [role='tab'] { color: rgba(255, 255, 255, 0.74); }
+.instance-detail [role='tab'][data-state='active'] { color: #fff; }
