@@ -1,0 +1,76 @@
+{
+  "name": "AzureWare",
+  "short": "azureware",
+  "description": "AzureWare 主题：Minecraft 客户端 ClickGUI 风格，可拖动的分组面板、ArrayList 在线列表与 HUD",
+  "version": "0.0.0",
+  "author": "wugan666",
+  "url": "https://github.com/wugan666/komari-theme-azureware",
+  "preview": "preview.png",
+  "configuration": {
+    "type": "managed",
+    "name": "AzureWare 设置",
+    "data": [
+      {
+        "name": "基础设置",
+        "type": "title"
+      },
+      {
+        "key": "dataUpdateInterval",
+        "name": "数据更新间隔",
+        "type": "number",
+        "default": 3,
+        "help": "实时数据刷新间隔，单位：秒（建议 1-10 秒）"
+      },
+      {
+        "key": "rpcTransportMode",
+        "name": "RPC 连接模式",
+        "type": "select",
+        "default": "websocket",
+        "options": "websocket,http",
+        "help": "推荐 websocket，无法使用时选择 http"
+      },
+      {
+        "name": "界面",
+        "type": "title"
+      },
+      {
+        "key": "accentColor",
+        "name": "主题色",
+        "type": "select",
+        "default": "azure",
+        "options": "azure,cyan,violet,rose,mint",
+        "help": "ClickGUI 的强调色：azure 蔚蓝、cyan 青、violet 紫、rose 玫红、mint 薄荷绿"
+      },
+      {
+        "key": "panelGroupBy",
+        "name": "面板分组方式",
+        "type": "select",
+        "default": "group",
+        "options": "group,region",
+        "help": "group：按节点分组生成面板（没有任何分组时自动按地区）；region：按地区"
+      },
+      {
+        "key": "showArrayList",
+        "name": "显示 ArrayList",
+        "type": "switch",
+        "default": true,
+        "help": "在宽屏右上角显示在线节点列表（客户端 ArrayList 风格）"
+      },
+      {
+        "key": "arrayListSuffix",
+        "name": "ArrayList 后缀",
+        "type": "select",
+        "default": "cpu",
+        "options": "cpu,ram,net",
+        "help": "ArrayList 每行节点名后面显示的数据：cpu 占用、ram 内存占用、net 实时网速"
+      },
+      {
+        "key": "hideAdminEntryWhenLoggedOut",
+        "name": "隐藏后台入口",
+        "type": "switch",
+        "default": false,
+        "help": "未登录时隐藏后台管理入口"
+      }
+    ]
+  }
+}
